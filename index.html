@@ -1142,6 +1142,7 @@ canvas{position:fixed;top:0;left:0;pointer-events:none;z-index:1001;}
     <div id="mode-games" style="display:none"></div>
     <div id="mode-story" style="display:none"></div>
     <div id="mode-poem" style="display:none"></div>
+    <div id="mode-encyc" style="display:none"></div>
     <div id="mode-english" style="display:none"></div>
   </div>
 </div>
@@ -1598,6 +1599,15 @@ const LEVELS_CFG={
       '🌿 Nature':{mode:'poem',cat:'nature'},
       '😄 Funny':{mode:'poem',cat:'funny'},
     }},
+  10:{title:'🌍 Encyclopedia',desc:'All Ages · Fruits · Veg · Animals · Birds · Sea',icon:'🌍',c1:'#00FFA3',c2:'#0088FF',age:'All Ages',isEncyc:true,
+    subs:{
+      '🍎 Fruits':{mode:'encyc',cat:'fruits'},
+      '🥦 Vegetables':{mode:'encyc',cat:'vegetables'},
+      '🦁 Wild Animals':{mode:'encyc',cat:'wild'},
+      '🐕 Domestic':{mode:'encyc',cat:'domestic'},
+      '🐠 Sea Life':{mode:'encyc',cat:'sea'},
+      '🦅 Birds':{mode:'encyc',cat:'birds'},
+    }},
 };
 
 function buildHome(){
@@ -1608,6 +1618,7 @@ function buildHome(){
     card.style.setProperty('--c1',lev.c1);card.style.setProperty('--c2',lev.c2);
     const storyBadge=lev.isStory?'<span class="lc-new-badge">✨ NEW</span>':'';
     const engBadge=lev.isEnglish?'<span class="lc-new-badge">🔥 NEW</span>':'';
+    const encycBadge=lev.isEncyc?'<span class="lc-new-badge" style="background:linear-gradient(135deg,#00FFA3,#0088FF);">🌍 NEW</span>':'';
     const poemBadge=lev.isPoem?'<span class="lc-new-badge" style="background:linear-gradient(135deg,#FF69B4,#C060FF);">🎵 NEW</span>':'';
     card.innerHTML=`
       <div class="lc-glow"></div>
@@ -1669,6 +1680,7 @@ function openSubject(name,btn){
   else if(sub.mode==='games')initGamesPanel();
   else if(sub.mode==='story'){storyState.activeCategory=sub.cat||'animals';initStoryTime();}
   else if(sub.mode==='poem'){initPoems(sub.cat||'nursery');}
+  else if(sub.mode==='encyc'){initEncyc(sub.cat||'fruits');}
   else if(sub.mode==='english')initEnglish(sub.level);
 }
 
@@ -2152,7 +2164,8 @@ function renderScr(){
     <div id="scrHintArea"></div>
     <div class="scr-btns" style="margin-top:14px;">
       <button class="scr-btn p" onclick="checkScr()">✅ Check!</button>
-      <button class="scr-btn s" onclick="clearScr()">🔄 Clear</button>
+      <button class="scr-btn s" onclick="undoScr()" style="background:linear-gradient(135deg,rgba(255,140,0,0.25),rgba(255,92,168,0.18));border:1px solid rgba(255,140,0,0.4);color:var(--orange);">⌫ Undo</button>
+      <button class="scr-btn s" onclick="clearScr()" style="font-size:0.75rem;padding:8px 14px;opacity:0.7;">🗑️ Clear All</button>
       <button class="scr-btn hint-btn" id="scrHintBtn" onclick="showScrHint()" ${scHintsLeft<=0?'disabled':''}>
         💡 Hint (${scHintsLeft} left)
       </button>
@@ -2206,6 +2219,16 @@ function rmScrL(si){
   const s=scrLS.find(x=>x.l===l&&x.used);
   if(s)s.used=false;
   renderScrUI();
+}
+
+function undoScr(){
+  // Find last filled slot and remove it
+  var lastIdx=-1;
+  for(var i=scAns.length-1;i>=0;i--){if(scAns[i]!==null){lastIdx=i;break;}}
+  if(lastIdx===-1)return;
+  rmScrL(lastIdx);
+  var fb=document.getElementById('scfb');
+  if(fb)fb.style.display='none';
 }
 
 function clearScr(){
@@ -2479,7 +2502,7 @@ function showResult(){
   setTimeout(giftForCompletion,2000);
 }
 function clearModes(){
-  ['baby','alpha','quiz','flags','scramble','tt','typing','result','games','story','poem','english'].forEach(function(m){
+  ['baby','alpha','quiz','flags','scramble','tt','typing','result','games','story','poem','encyc','english'].forEach(function(m){
     var el=document.getElementById('mode-'+m);
     if(el){el.style.display='none';el.innerHTML='';}
   });
@@ -3133,8 +3156,9 @@ function renderSpell(){
     '</div>'+
     '<div style="font-size:0.8rem;opacity:0.5;margin-bottom:8px">Your answer:</div>'+
     '<div id="spellAnswer" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:52px;padding:4px;background:rgba(255,255,255,0.03);border-radius:14px;border:1px dashed rgba(255,255,255,0.15);margin-bottom:14px;"></div>'+
-    '<div style="display:flex;gap:10px;justify-content:center;">'+
-    '<button onclick="clearSpellAnswer()" style="padding:10px 20px;border-radius:50px;border:none;cursor:pointer;background:rgba(255,80,80,0.2);color:white;font-family:var(--h);font-weight:800;">🗑️ Clear</button>'+
+    '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">'+
+    '<button onclick="undoSpellLetter()" style="padding:10px 20px;border-radius:50px;border:none;cursor:pointer;background:linear-gradient(135deg,rgba(255,140,0,0.25),rgba(255,92,168,0.18));border:1px solid rgba(255,140,0,0.4);color:#FF8C00;font-family:var(--h);font-weight:800;">⌫ Undo</button>'+
+    '<button onclick="clearSpellAnswer()" style="padding:10px 16px;border-radius:50px;border:none;cursor:pointer;background:rgba(255,80,80,0.15);color:rgba(255,255,255,0.6);font-family:var(--h);font-weight:800;font-size:0.8rem;">🗑️ Clear All</button>'+
     '<button onclick="checkSpell(\''+item.w+'\')" style="padding:10px 24px;border-radius:50px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--purple),var(--pink));color:white;font-family:var(--h);font-weight:800;">✅ Check!</button></div>'+
     '<div id="spellFb" style="display:none;padding:12px;border-radius:16px;margin-top:12px;font-family:var(--h);font-size:1.1rem;text-align:center;"></div></div>';
 
@@ -3168,6 +3192,14 @@ function removeSpellLetter(idx){
   var ansEl=document.getElementById('ans-'+idx);
   if(ansEl)ansEl.remove();
   spellPicked[idx]=null;
+}
+
+function undoSpellLetter(){
+  // Find last non-null entry in spellPicked and remove it
+  var lastIdx=-1;
+  for(var i=spellPicked.length-1;i>=0;i--){if(spellPicked[i]!==null){lastIdx=i;break;}}
+  if(lastIdx===-1)return;
+  removeSpellLetter(lastIdx);
 }
 
 function clearSpellAnswer(){
@@ -4133,7 +4165,8 @@ function renderSentBuilder() {
   var fb = document.createElement('div'); fb.className = 'fb-bar'; fb.id = 'wrFb'; fb.style.display = 'none'; card.appendChild(fb);
   var br = document.createElement('div'); br.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap';
   br.appendChild(btn('✅ Check!','padding:11px 24px;border-radius:50px;border:none;cursor:pointer;font-family:var(--b);font-size:0.88rem;font-weight:800;background:linear-gradient(135deg,var(--purple),var(--pink));color:white', function(){ checkSent(q.words); }));
-  br.appendChild(btn('🔄 Clear','padding:11px 20px;border-radius:50px;border:1px solid var(--border);background:rgba(255,255,255,0.07);color:white;cursor:pointer;font-weight:800;font-size:0.85rem', clearSent));
+  br.appendChild(btn('⌫ Undo','padding:11px 20px;border-radius:50px;border:none;cursor:pointer;font-weight:800;font-size:0.88rem;background:linear-gradient(135deg,rgba(255,140,0,0.25),rgba(255,92,168,0.18));border:1px solid rgba(255,140,0,0.4);color:#FF8C00', undoSent));
+  br.appendChild(btn('🗑️ Clear All','padding:11px 16px;border-radius:50px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.5);cursor:pointer;font-weight:800;font-size:0.75rem', clearSent));
   var hintsLeft = q.words.length;
   var hintBtn = btn('💡 Hint','padding:11px 20px;border-radius:50px;border:1px solid rgba(255,215,0,0.4);background:rgba(255,215,0,0.1);color:var(--gold);cursor:pointer;font-weight:800;font-size:0.85rem', function(){
     showSentHint(q.words, hintBtn);
@@ -4200,6 +4233,13 @@ function addWrWord(word, idx) {
   wrSentence.push({word:word, idx:idx});
   var b = document.getElementById('wb' + idx); if (b) b.classList.add('used');
   renderSentBuild();
+}
+function undoSent() {
+  if (wrSentence.length === 0) return;
+  var removed = wrSentence.pop();
+  var b = document.getElementById('wb' + removed.idx); if (b) b.classList.remove('used');
+  renderSentBuild();
+  var fb = document.getElementById('wrFb'); if (fb) fb.style.display = 'none';
 }
 function clearSent() {
   wrSentence = [];
@@ -6449,6 +6489,587 @@ function openPoem(poem,cat,el){
     wrap.querySelectorAll('.pm-line .story-word').forEach(function(s){freshSpans.push(s);});
     speakWithHighlight(fullText,freshSpans,0.78,1.1);
   },700);
+}
+
+
+// ══════════════════════════════════════════════════════════
+// 🌍 NATURE ENCYCLOPEDIA ENGINE
+// ══════════════════════════════════════════════════════════
+
+(function injectEncycCSS(){
+  if(document.getElementById('encycCSS'))return;
+  var s=document.createElement('style');s.id='encycCSS';
+  s.textContent=
+    '/* ── Encyclopedia 3D Styles ── */'+
+    '.enc-wrap{max-width:960px;margin:0 auto;padding:12px 14px 100px;}'+
+    '.enc-header{text-align:center;margin-bottom:18px;}'+
+    '.enc-title{font-family:var(--h);font-size:1.8rem;font-weight:900;background:linear-gradient(135deg,#00FFA3,#0088FF,#FF69B4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;}'+
+    '.enc-subtitle{font-size:0.83rem;color:rgba(255,255,255,0.4);}'+
+    '.enc-cat-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:16px;scrollbar-width:none;}'+
+    '.enc-cat-row::-webkit-scrollbar{display:none;}'+
+    '.enc-cat-btn{flex-shrink:0;padding:9px 18px;border-radius:50px;border:none;cursor:pointer;font-family:var(--h);font-size:0.85rem;font-weight:800;transition:all 0.25s;white-space:nowrap;opacity:0.5;touch-action:manipulation;}'+
+    '.enc-cat-btn.active{opacity:1;transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.4);}'+
+    '.enc-count{font-size:0.78rem;color:rgba(255,255,255,0.35);margin-bottom:14px;text-align:center;}'+
+    '.enc-search{width:100%;max-width:400px;display:block;margin:0 auto 16px;padding:11px 18px;border-radius:50px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:white;font-family:var(--h);font-size:0.9rem;outline:none;box-sizing:border-box;}'+
+    '.enc-search::placeholder{color:rgba(255,255,255,0.3);}'+
+    /* 3D grid */
+    '.enc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:18px;}'+
+    /* 3D card wrapper */
+    '.enc-card-wrap{perspective:900px;cursor:pointer;}'+
+    '.enc-card-inner{position:relative;width:100%;padding-bottom:145%;transform-style:preserve-3d;transition:transform 0.8s cubic-bezier(0.4,0.2,0.2,1);border-radius:22px;box-shadow:0 8px 32px rgba(0,0,0,0.4);}'+
+    '.enc-card-wrap.flipped .enc-card-inner{transform:rotateY(180deg);}'+
+    /* front & back faces */
+    '.enc-face{position:absolute;inset:0;border-radius:20px;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;}'+
+    '.enc-face-front{border:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;overflow:hidden;}'+
+    '.enc-face-back{transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 14px;text-align:center;border:2px solid rgba(255,255,255,0.1);}'+
+    /* front image */
+    '.enc-f-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:22px;transition:transform 0.5s ease;}'+'.enc-card-wrap:hover .enc-f-img{transform:scale(1.07);}'+
+    '.enc-f-img-emoji{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:5.5rem;background:linear-gradient(145deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02));}'+
+    '.enc-f-overlay{position:relative;z-index:2;width:100%;padding:28px 12px 14px;background:linear-gradient(transparent,rgba(0,0,0,0.92) 60%);border-radius:0 0 22px 22px;}'+
+    '.enc-f-name{font-family:var(--h);font-size:1rem;font-weight:900;color:white;text-shadow:0 2px 12px rgba(0,0,0,0.9);letter-spacing:0.3px;}'+
+    '.enc-f-tap{font-size:0.68rem;color:rgba(255,255,255,0.7);margin-top:3px;letter-spacing:0.5px;}'+
+    /* 3D shimmer on front */
+    '.enc-card-wrap:hover .enc-face-front{box-shadow:0 20px 50px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.2);}'+
+    /* back face */
+    '.enc-b-emoji{font-size:2.4rem;margin-bottom:6px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5));}'+
+    '.enc-b-name{font-family:var(--h);font-size:1rem;font-weight:900;color:white;margin-bottom:8px;}'+
+    '.enc-b-benefit{font-size:0.78rem;font-weight:800;margin-bottom:8px;padding:6px 10px;border-radius:20px;background:rgba(255,255,255,0.15);}'+
+    '.enc-b-fact{font-size:0.72rem;color:rgba(255,255,255,0.85);line-height:1.6;margin-bottom:12px;max-height:90px;overflow:hidden;}'+
+    '.enc-b-more{font-size:0.68rem;padding:6px 14px;border-radius:50px;border:none;cursor:pointer;font-family:var(--h);font-weight:800;color:rgba(0,0,0,0.85);}'+
+    /* spin badge */
+    '@keyframes enc360{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}'+
+    '.enc-spin-badge{position:absolute;top:10px;right:10px;z-index:5;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);color:white;border-radius:50px;padding:4px 10px;font-size:0.62rem;font-weight:800;font-family:var(--h);border:1px solid rgba(255,255,255,0.25);letter-spacing:0.5px;}'+
+    /* modal */
+    '.enc-modal{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,0.88);backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:center;padding:16px;}'+
+    '.enc-modal-box{background:linear-gradient(145deg,rgba(18,8,45,0.99),rgba(8,4,25,0.99));border:1px solid rgba(255,255,255,0.12);border-radius:28px;padding:24px 22px;max-width:400px;width:100%;max-height:88vh;overflow-y:auto;position:relative;animation:vgPop 0.3s ease;}'+
+    '.enc-modal-close{position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.1);border:none;color:white;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;z-index:2;}'+
+    /* 3D spinner in modal */
+    '.enc-modal-3d{perspective:700px;width:200px;height:200px;margin:0 auto 10px;cursor:pointer;}'+
+    '.enc-modal-3d-inner{width:100%;height:100%;transform-style:preserve-3d;animation:enc360 5s linear infinite;border-radius:24px;}'+
+    '.enc-modal-3d-inner.paused{animation-play-state:paused;}'+
+    '.enc-modal-3d img,.enc-modal-3d .enc-modal-3d-emoji{width:200px;height:200px;object-fit:cover;border-radius:24px;display:block;box-shadow:0 12px 40px rgba(0,0,0,0.6);}'+
+    '.enc-modal-3d .enc-modal-3d-emoji{display:flex;align-items:center;justify-content:center;font-size:6rem;}'+
+    '.enc-modal-spin-hint{text-align:center;font-size:0.68rem;color:rgba(255,255,255,0.35);margin-bottom:12px;}'+
+    '.enc-modal-name{font-family:var(--h);font-size:1.5rem;font-weight:900;text-align:center;color:white;margin-bottom:4px;}'+
+    '.enc-modal-tag{text-align:center;margin-bottom:12px;}'+
+    '.enc-modal-tag span{display:inline-block;padding:4px 14px;border-radius:50px;font-size:0.73rem;font-weight:800;font-family:var(--h);}'+
+    '.enc-modal-section{background:rgba(255,255,255,0.05);border-radius:14px;padding:12px 14px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.07);}'+
+    '.enc-modal-section-title{font-family:var(--h);font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;opacity:0.45;margin-bottom:5px;}'+
+    '.enc-modal-section-text{font-size:0.87rem;color:rgba(255,255,255,0.88);line-height:1.65;}'+
+    '.enc-modal-btn{width:100%;padding:13px;border-radius:50px;border:none;cursor:pointer;font-family:var(--h);font-size:0.95rem;font-weight:800;color:white;margin-top:6px;transition:transform 0.2s,box-shadow 0.2s;}'+
+    '.enc-modal-btn:hover{transform:scale(1.04);box-shadow:0 8px 24px rgba(0,0,0,0.4);}'+
+    '.enc-no-results{text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3);font-size:1rem;}';
+  document.head.appendChild(s);
+})();
+
+var ENCYC_CATS=[
+  {id:'fruits',      label:'🍎 Fruits',       grd:'linear-gradient(135deg,#FF6B6B,#FF8E53)', color:'#FF6B6B', bg:'rgba(255,107,107,0.15)'},
+  {id:'vegetables',  label:'🥦 Vegetables',   grd:'linear-gradient(135deg,#00C853,#1DE9B6)', color:'#00C853', bg:'rgba(0,200,83,0.12)'},
+  {id:'wild',        label:'🦁 Wild Animals', grd:'linear-gradient(135deg,#FFD700,#FF8C00)', color:'#FFD700', bg:'rgba(255,215,0,0.12)'},
+  {id:'domestic',    label:'🐕 Domestic',     grd:'linear-gradient(135deg,#FF69B4,#C060FF)', color:'#FF69B4', bg:'rgba(255,105,180,0.12)'},
+  {id:'sea',         label:'🐠 Sea Life',     grd:'linear-gradient(135deg,#00E8FF,#0055FF)', color:'#00E8FF', bg:'rgba(0,232,255,0.12)'},
+  {id:'birds',       label:'🦅 Birds',        grd:'linear-gradient(135deg,#A78BFA,#60A5FA)', color:'#A78BFA', bg:'rgba(167,139,250,0.12)'},
+];
+
+var ENCYC_DATA={
+fruits:[
+  {e:'🍎',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Red_Apple.jpg/400px-Red_Apple.jpg',name:'Apple',       benefit:'Boosts immunity & heart health',   fact:'Keeps the doctor away! High in fibre, Vitamin C and antioxidants. Great for your teeth and digestion.'},
+  {e:'🍌',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Banana-Platano.jpg/400px-Banana-Platano.jpg',name:'Banana',      benefit:'Energy booster & mood lifter',     fact:'Packed with potassium and Vitamin B6. Gives quick energy and helps your muscles work properly.'},
+  {e:'🍊',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Oranges_and_orange_juice.jpg/400px-Oranges_and_orange_juice.jpg',name:'Orange',      benefit:'Vitamin C powerhouse',             fact:'One orange gives you a full day of Vitamin C! Great for skin, immunity and fighting colds.'},
+  {e:'🥭',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Mango_Mk2009_adj.jpg/400px-Mango_Mk2009_adj.jpg',name:'Mango',       benefit:'Eye health & glowing skin',        fact:'Called the King of Fruits! Rich in Vitamins A and C. Helps your eyes stay sharp and skin glow.'},
+  {e:'🍓',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/PerfectStrawberry.jpg/400px-PerfectStrawberry.jpg',name:'Strawberry',  benefit:'Heart health & bright teeth',      fact:'Full of antioxidants and Vitamin C. Helps whiten teeth naturally and keeps your heart strong.'},
+  {e:'🍇',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Wine_grapes03.jpg/400px-Wine_grapes03.jpg',name:'Grapes',      benefit:'Brain boost & strong bones',       fact:'Rich in Vitamin K and antioxidants. Purple grapes are especially great for brain health.'},
+  {e:'🍉',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Wapp_fruits.jpg/400px-Wapp_fruits.jpg',name:'Watermelon',  benefit:'Hydration & healthy heart',        fact:'92% water! Keeps you hydrated in summer. Contains lycopene which is brilliant for your heart.'},
+  {e:'🍍',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Pineapple_and_cross_section.jpg/400px-Pineapple_and_cross_section.jpg',name:'Pineapple',   benefit:'Strong digestion & immunity',      fact:'Contains bromelain which helps digest food. Also fights inflammation and boosts immunity.'},
+  {e:'🥝',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Kiwi_-_Whole_and_Split.jpg/400px-Kiwi_-_Whole_and_Split.jpg',name:'Kiwi',        benefit:'More Vitamin C than an orange!',   fact:'Tiny but mighty! Has twice the Vitamin C of oranges and lots of Vitamin K for strong bones.'},
+  {e:'🍑',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Autumn_Red_peaches.jpg/400px-Autumn_Red_peaches.jpg',name:'Peach',       benefit:'Healthy skin & good eyesight',     fact:'Rich in Vitamins A and C. Helps keep your skin smooth and your eyes healthy.'},
+  {e:'🍐',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/William_bartlett_pear.jpg/400px-William_bartlett_pear.jpg',name:'Pear',        benefit:'Digestion & weight management',    fact:'High in fibre which keeps your tummy happy. Also a great source of Vitamin C and K.'},
+  {e:'🍒',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Cherry_Stella444.jpg/400px-Cherry_Stella444.jpg',name:'Cherry',      benefit:'Better sleep & less pain',         fact:'Contains melatonin which helps you sleep. Also reduces muscle soreness after exercise!'},
+  {e:'🫐',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Blueberries.jpg/400px-Blueberries.jpg',name:'Blueberry',   benefit:'Super brain food!',                fact:'One of the most antioxidant-rich foods. Boosts memory, brain health and fights ageing.'},
+  {e:'🍋',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Lemon-Whole-Split.jpg/400px-Lemon-Whole-Split.jpg',name:'Lemon',       benefit:'Detox & Vitamin C boost',         fact:'Great for digestion and cleansing the body. Add to water for a healthy daily detox drink.'},
+  {e:'🥥',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Coconut-SXB.jpg/400px-Coconut-SXB.jpg',name:'Coconut',     benefit:'Energy, hydration & strong hair',  fact:'Coconut water is nature\'s sports drink! The flesh is full of healthy fats for energy.'},
+  {e:'🫒',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Olives_-_all_types.jpg/400px-Olives_-_all_types.jpg',name:'Olive',       benefit:'Heart health & healthy fat',       fact:'Full of healthy monounsaturated fats. Olive oil is one of the healthiest oils in the world.'},
+  {e:'🍈',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Rock_melon.jpg/400px-Rock_melon.jpg',name:'Melon',       benefit:'Hydration & Vitamin A',            fact:'Very hydrating and a great source of Vitamin A for healthy eyes and skin.'},
+  {e:'🥑',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Avocado_Hass_-_single_and_halved.jpg/400px-Avocado_Hass_-_single_and_halved.jpg',name:'Avocado',     benefit:'Healthy brain & heart fat',        fact:'Full of healthy fats, potassium and fibre. Great for brain development and heart health.'},
+  {e:'🍅',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Tomato_je.jpg/400px-Tomato_je.jpg',name:'Tomato',      benefit:'Skin protection & cancer fighter', fact:'Rich in lycopene, a powerful antioxidant. Protects skin from sun damage and fights disease.'},
+  {e:'🍆',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Solanum_melongena_34.jpg/400px-Solanum_melongena_34.jpg',name:'Aubergine',   benefit:'Heart health & weight loss',       fact:'Low in calories but high in fibre. Great for heart health and keeping blood sugar stable.'},
+  {e:'🍏',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Granny_smith_and_cross_section.jpg/400px-Granny_smith_and_cross_section.jpg',name:'Green Apple', benefit:'Teeth cleaning & low sugar',       fact:'Has slightly less sugar than red apples. Biting into one naturally cleans your teeth!'},
+  {e:'🍎',img:'https://horticulture.co.uk/wp-content/uploads/2021/11/22-4.jpg',name:'Pomegranate', benefit:'Heart health & anti-ageing',       fact:'Loaded with antioxidants — more than red wine or green tea! Amazing for heart health.'},
+  {e:'🍦',img:'https://img.freepik.com/premium-photo/pink-guava-fruit-isolated-white-surface_55883-3337.jpg',name:'Guava',       benefit:'4x Vitamin C of an orange!',       fact:'One guava has 4 times more Vitamin C than an orange. Also brilliant for digestion.'},
+  {e:'🌴',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Date_Fruit_Photograph_By_Shagil_Kannur.jpg/400px-Date_Fruit_Photograph_By_Shagil_Kannur.jpg',name:'Date',        benefit:'Instant energy & strong bones',    fact:'Nature\'s energy bar! Full of natural sugars, iron and calcium for strong bones.'},
+  {e:'🍑',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Apricot_fruits.jpg/400px-Apricot_fruits.jpg',name:'Apricot',     benefit:'Eye health & glowing skin',        fact:'Rich in beta-carotene which your body turns into Vitamin A. Brilliant for eyes and skin.'},
+  {e:'🫐',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Raspberry_-_whole_%28Rubus_idaeus%29.jpg/400px-Raspberry_-_whole_%28Rubus_idaeus%29.jpg',name:'Raspberry',   benefit:'Cancer fighting & fibre',          fact:'Loaded with antioxidants and fibre. One cup gives you 8g of fibre for a happy tummy.'},
+  {e:'🍒',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Plum_-_Prunus_domestica_-_variety_-_Mirabelle.jpg/400px-Plum_-_Prunus_domestica_-_variety_-_Mirabelle.jpg',name:'Plum',        benefit:'Bone health & better memory',      fact:'Rich in Vitamin K and antioxidants. Studies show prunes (dried plums) improve memory!'},
+  {e:'🥭',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Papaya_cross_section_BNC.jpg/400px-Papaya_cross_section_BNC.jpg',name:'Papaya',      benefit:'Digestion & clear skin',           fact:'Contains papain, an enzyme that helps digest protein. Also great for clear, glowing skin.'},
+  {e:'🍋',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Lime_and_cross_section.jpg/400px-Lime_and_cross_section.jpg',name:'Lime',        benefit:'Immunity & kidney stones prevention', fact:'High in Vitamin C and citric acid. Helps prevent kidney stones and boosts immunity.'},
+  {e:'🫒',img:'https://img.freepik.com/premium-psd/figs-isolated-alpha-layer-background_55883-11506.jpg',name:'Fig',         benefit:'Bone strength & blood health',     fact:'One of the oldest fruits! Rich in calcium for bones and iron for healthy blood.'},
+  {e:'🌺',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Pitaya_cross_section_ed2.jpg/400px-Pitaya_cross_section_ed2.jpg',name:'Dragon Fruit',benefit:'Gut health & strong immunity',     fact:'Stunning pink fruit! Packed with probiotics for gut health and Vitamin C for immunity.'},
+  {e:'🍈',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Lychee_whole_and_halved.jpg/400px-Lychee_whole_and_halved.jpg',name:'Lychee',      benefit:'Digestion & healthy skin',         fact:'Sweet and juicy! Rich in Vitamin C and B vitamins. Helps with digestion and skin health.'},
+  {e:'🥥',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Coconut-SXB.jpg/400px-Coconut-SXB.jpg',name:'Coconut (raw)',benefit:'Electrolytes & bone health',      fact:'Raw coconut flesh is high in manganese for bone health and MCTs for instant energy.'},
+  {e:'💚',img:'https://horticulture.co.uk/wp-content/uploads/2021/11/8-15.jpg',name:'Jackfruit',   benefit:'Immunity & blood health',          fact:'Largest tree fruit in the world! High in Vitamin C, potassium and B vitamins.'},
+  {e:'🟣',img:'https://t4.ftcdn.net/jpg/17/75/66/11/360_F_1775661156_8du4X86sF7xtPPFqLsWNTykqTAd7NcQv.jpg',name:'Passion Fruit',benefit:'Immunity & calm sleep',           fact:'Contains alkaloids that act as a natural sedative. Also very high in Vitamin C.'},
+],
+vegetables:[
+  {e:'🥕',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Vegetable-Carrot-Bundle-wStalks.jpg/400px-Vegetable-Carrot-Bundle-wStalks.jpg',name:'Carrot',      benefit:'Super eyesight & glowing skin',    fact:'Rich in beta-carotene which becomes Vitamin A. Famous for helping you see in the dark!'},
+  {e:'🥦',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Fresh_broccoli_head.jpg/400px-Fresh_broccoli_head.jpg',name:'Broccoli',    benefit:'Cancer fighter & bone builder',    fact:'One of the most nutritious vegetables! Has Vitamins C, K and folate. A true superfood.'},
+  {e:'🍃',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Spinach_leaves.jpg/400px-Spinach_leaves.jpg',name:'Spinach',     benefit:'Strong muscles like Popeye!',      fact:'Loaded with iron, calcium and Vitamins K and A. Popeye was right — it makes you strong!'},
+  {e:'🥔',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Potato_je.jpg/400px-Potato_je.jpg',name:'Potato',      benefit:'Energy & brain fuel',              fact:'A great source of Vitamin B6 for brain health and carbohydrates for lasting energy.'},
+  {e:'🧅',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Onions.jpg/400px-Onions.jpg',name:'Onion',       benefit:'Fights infection & heart health',  fact:'Contains quercetin which fights bacteria and viruses. Brilliant for heart health too.'},
+  {e:'🧄',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Garlic-Knoblauch-Ajo.jpg/400px-Garlic-Knoblauch-Ajo.jpg',name:'Garlic',      benefit:'Nature\'s antibiotic!',            fact:'Used as medicine for thousands of years. Fights bacteria, viruses and keeps heart healthy.'},
+  {e:'🥒',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Cucumbers_on_white.jpg/400px-Cucumbers_on_white.jpg',name:'Cucumber',    benefit:'Hydration & cool skin',            fact:'96% water! Great for hydration. Putting slices on eyes reduces puffiness and cools skin.'},
+  {e:'🫑',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Capsicum_and_cross_section.jpg/400px-Capsicum_and_cross_section.jpg',name:'Bell Pepper',  benefit:'Vitamin C king of vegetables!',   fact:'Red bell peppers have 3 times more Vitamin C than an orange. Great for immunity.'},
+  {e:'🥬',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Cauliflower_2.jpg/400px-Cauliflower_2.jpg',name:'Cauliflower', benefit:'Brain health & anti-inflammation', fact:'Contains choline which is essential for brain development. Also fights inflammation.'},
+  {e:'🥬',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Cabbage_and_cross_section_on_white_2.jpg/400px-Cabbage_and_cross_section_on_white_2.jpg',name:'Cabbage',     benefit:'Gut health & Vitamin C',           fact:'Very cheap but very healthy! Fermented as sauerkraut, it\'s brilliant for gut bacteria.'},
+  {e:'🫛',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/PeasAndPods.JPG/400px-PeasAndPods.JPG',name:'Peas',        benefit:'Protein & Vitamin K for bones',    fact:'One of the best vegetable sources of protein. Also high in Vitamin K for strong bones.'},
+  {e:'🌽',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Corn_and_cross_section.jpg/400px-Corn_and_cross_section.jpg',name:'Corn',        benefit:'Energy & eye health',              fact:'High in lutein and zeaxanthin which protect your eyes from damage. Great energy source.'},
+  {e:'🎃',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/FruitsnVeg_Pumpkin_white_background.jpg/400px-FruitsnVeg_Pumpkin_white_background.jpg',name:'Pumpkin',     benefit:'Eye health & immunity',            fact:'Extremely rich in Vitamin A — one cup gives you 245% of your daily needs! Great for eyes.'},
+  {e:'🍠',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Ipomoea_batatas_006.jpg/400px-Ipomoea_batatas_006.jpg',name:'Sweet Potato',benefit:'Energy & Vitamin A superstar',     fact:'One of the most nutritious foods on earth. Packed with Vitamin A, C and potassium.'},
+  {e:'🟣',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Beet_2009.jpg/400px-Beet_2009.jpg',name:'Beetroot',    benefit:'Stamina & blood pressure hero',    fact:'Athletes drink beetroot juice for better performance! Lowers blood pressure naturally.'},
+  {e:'🥬',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Salad_garden_2009.jpg/400px-Salad_garden_2009.jpg',name:'Lettuce',     benefit:'Hydration & calm sleep',           fact:'Contains lactucarium, a mild sedative. Helps you relax and sleep better. Also hydrating.'},
+  {e:'🌿',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Celery_cross_section.jpg/400px-Celery_cross_section.jpg',name:'Celery',      benefit:'Digestion & inflammation fighter', fact:'Very low in calories but full of fibre. Contains antioxidants that reduce inflammation.'},
+  {e:'🟢',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Spargel_2007.jpg/400px-Spargel_2007.jpg',name:'Asparagus',   benefit:'Kidney health & folate',           fact:'An excellent source of folate, essential for pregnant women. Also great for kidneys.'},
+  {e:'🍄',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/White_mushroom_Agaricus_bisporus.jpg/400px-White_mushroom_Agaricus_bisporus.jpg',name:'Mushroom',    benefit:'Vitamin D & immune system',        fact:'The only plant food that naturally contains Vitamin D. Amazing for immune health.'},
+  {e:'🟢',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Courgettes_2009.jpg/400px-Courgettes_2009.jpg',name:'Zucchini',    benefit:'Weight loss & eye health',         fact:'Very low in calories and high in water. Great for weight management and eye health.'},
+  {e:'🟣',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Solanum_melongena_34.jpg/400px-Solanum_melongena_34.jpg',name:'Aubergine/Eggplant',benefit:'Brain health & heart health', fact:'Rich in nasunin, an antioxidant that protects brain cells from damage.'},
+  {e:'⬜',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Radish_ps10.jpg/400px-Radish_ps10.jpg',name:'Radish',      benefit:'Liver cleanse & digestion',        fact:'Helps detoxify the liver and keeps bile flowing properly. Great for digestion.'},
+  {e:'🟢',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Courgettes_2009.jpg/400px-Courgettes_2009.jpg',name:'Courgette',   benefit:'Eye health & weight control',      fact:'Rich in lutein and zeaxanthin for healthy eyes. Very low calorie for weight management.'},
+  {e:'🟢',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/Leek_-_fluorescent.jpg/400px-Leek_-_fluorescent.jpg',name:'Leek',        benefit:'Heart health & digestion',         fact:'Part of the onion family. Contains kaempferol which protects against heart disease.'},
+  {e:'💚',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Kale-Bundle.jpg/400px-Kale-Bundle.jpg',name:'Kale',        benefit:'The ultimate superfood!',          fact:'One of the most nutrient-dense foods on earth. Has Vitamins A, C, K and antioxidants.'},
+  {e:'🟢',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Brussels_sprout_closeup.jpg/400px-Brussels_sprout_closeup.jpg',name:'Brussels Sprouts',benefit:'Cancer fighter & bone builder', fact:'Tiny but packed with Vitamins C and K. Studies show they help protect against cancer.'},
+  {e:'🟡',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Corn_and_cross_section.jpg/400px-Corn_and_cross_section.jpg',name:'Corn on Cob', benefit:'Fibre & gut health',               fact:'High in insoluble fibre which keeps your digestive system moving and healthy.'},
+  {e:'🟤',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Ginger_roots.jpg/400px-Ginger_roots.jpg',name:'Ginger',      benefit:'Nausea cure & inflammation fighter',fact:'Used for thousands of years to treat nausea, sickness and inflammation. Very powerful!'},
+  {e:'🌶️',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Cayenne_spice.jpg/400px-Cayenne_spice.jpg',name:'Chilli',      benefit:'Metabolism booster & pain relief', fact:'Capsaicin in chilli speeds up metabolism and can relieve pain. Used in muscle creams!'},
+  {e:'🫘',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Haricots_verts_p1040003.jpg/400px-Haricots_verts_p1040003.jpg',name:'Green Beans', benefit:'Heart health & iron',              fact:'Good source of iron, calcium and Vitamin K. Great for heart health and bone strength.'},
+  {e:'💜',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/RedCabbageCutInHalf.jpg/400px-RedCabbageCutInHalf.jpg',name:'Purple Cabbage',benefit:'Anti-ageing & brain health',     fact:'Has 10 times more Vitamins than green cabbage! The purple colour fights ageing.'},
+  {e:'🟤',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Turnip_2622027.jpg/400px-Turnip_2622027.jpg',name:'Turnip',      benefit:'Bone health & Vitamin C',          fact:'A root vegetable with good amounts of Vitamin C and calcium for healthy bones.'},
+  {e:'🟢',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Artichoke_extract.jpg/400px-Artichoke_extract.jpg',name:'Artichoke',   benefit:'Liver health & digestion',         fact:'One of the best foods for liver health. Also helps lower cholesterol and aid digestion.'},
+  {e:'⬜',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Pastinaca_sativa_-_Reh06.jpg/400px-Pastinaca_sativa_-_Reh06.jpg',name:'Parsnip',     benefit:'Energy & immune support',          fact:'Sweet root vegetable. Rich in Vitamin C, folate and fibre for immune system support.'},
+  {e:'🟡',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Cucurbita_moschata_Butternut_2012_G2.jpg/400px-Cucurbita_moschata_Butternut_2012_G2.jpg',name:'Butternut Squash',benefit:'Eye health & immunity',        fact:'Rich in beta-carotene and Vitamin C. One cup gives over 100% of daily Vitamin A needs.'},
+],
+wild:[
+  {e:'🦁',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Lion_waiting_in_Namibia.jpg/400px-Lion_waiting_in_Namibia.jpg',name:'Lion',         fact:'Called the King of the Jungle! Lions live in groups called prides. They can roar so loud it can be heard 8km away!',   habitat:'African Savanna',  diet:'Carnivore'},
+  {e:'🐯',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Walking_tiger_female.jpg/400px-Walking_tiger_female.jpg',name:'Tiger',        fact:'The largest wild cat on Earth! Tigers are excellent swimmers and love water. Each tiger has unique stripes like a fingerprint.',   habitat:'Asian forests',    diet:'Carnivore'},
+  {e:'🐘',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/African_Bush_Elephant.jpg/400px-African_Bush_Elephant.jpg',name:'Elephant',     fact:'The largest land animal! Elephants have amazing memories and show emotions like joy and sadness. Baby elephants are called calves.', habitat:'Africa & Asia',    diet:'Herbivore'},
+  {e:'🦒',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Giraffe_Mikumi_National_Park.jpg/400px-Giraffe_Mikumi_National_Park.jpg',name:'Giraffe',      fact:'The tallest animal on Earth at up to 6 metres! Their long neck helps them eat leaves from the tops of trees.',          habitat:'African Savanna',  diet:'Herbivore'},
+  {e:'🦓',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Plains_Zebra_Equus_quagga.jpg/400px-Plains_Zebra_Equus_quagga.jpg',name:'Zebra',        fact:'Every zebra has unique stripes — like a human fingerprint! Stripes confuse predators and help zebras recognise each other.',  habitat:'African Savanna',  diet:'Herbivore'},
+  {e:'🐆',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/TheCheethcat.jpg/400px-TheCheethcat.jpg',name:'Cheetah',      fact:'The fastest land animal reaching 120 km/h! A cheetah can go from 0 to 100 km/h in just 3 seconds. Amazing!',            habitat:'African Savanna',  diet:'Carnivore'},
+  {e:'🦏',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/White_Rhinoceros.jpg/400px-White_Rhinoceros.jpg',name:'Rhinoceros',   fact:'Their horn is made of keratin — the same material as your fingernails! Rhinos are sadly endangered due to poaching.',     habitat:'Africa & Asia',    diet:'Herbivore'},
+  {e:'🦛',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Hippo_at_melbourne_zoo.jpg/400px-Hippo_at_melbourne_zoo.jpg',name:'Hippopotamus', fact:'Despite their size, hippos can run at 30 km/h! They spend most of the day in water to stay cool. Very dangerous animals.', habitat:'African rivers',   diet:'Herbivore'},
+  {e:'🦍',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Gorille_gorille_gorille.jpg/400px-Gorille_gorille_gorille.jpg',name:'Gorilla',      fact:'Our closest relative after chimpanzees sharing 98.3% of our DNA! Gorillas are very intelligent and gentle giants.',         habitat:'Central Africa',   diet:'Herbivore'},
+  {e:'🐺',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Kolm%C3%A5rden_Wolf.jpg/400px-Kolm%C3%A5rden_Wolf.jpg',name:'Wolf',         fact:'Wolves live and hunt in family groups called packs. They communicate by howling at the moon — which can be heard 10km away!', habitat:'Forests & tundra', diet:'Carnivore'},
+  {e:'🐻',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Grizzly_bear_fishing_Brooks_Falls_in_Katmai_National_Park_in_Alaska.jpg/400px-Grizzly_bear_fishing_Brooks_Falls_in_Katmai_National_Park_in_Alaska.jpg',name:'Grizzly Bear', fact:'Grizzly bears can smell food from 29 km away! They eat up to 90kg of food per day in autumn to prepare for hibernation.',   habitat:'North America',    diet:'Omnivore'},
+  {e:'🐼',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Grosser_Panda.JPG/400px-Grosser_Panda.JPG',name:'Giant Panda',  fact:'Pandas eat bamboo for up to 16 hours a day! They are one of the rarest animals. Baby pandas are born tiny and pink.',       habitat:'China',            diet:'Herbivore'},
+  {e:'🦘',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Kangaroo_and_joey03.jpg/400px-Kangaroo_and_joey03.jpg',name:'Kangaroo',     fact:'Baby kangaroos (joeys) are born the size of a grape and live in mum\'s pouch for months! Kangaroos can jump 9 metres.',      habitat:'Australia',        diet:'Herbivore'},
+  {e:'🐨',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Koala_climbing_tree.jpg/400px-Koala_climbing_tree.jpg',name:'Koala',        fact:'Koalas sleep up to 22 hours a day! They eat only eucalyptus leaves which is toxic to most animals but not to them.',          habitat:'Australia',        diet:'Herbivore'},
+  {e:'🦊',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Red_Fox_%28Vulpes_vulpes%29_-_British_Wildlife_Centre-3.jpg/400px-Red_Fox_%28Vulpes_vulpes%29_-_British_Wildlife_Centre-3.jpg',name:'Fox',          fact:'Foxes are incredibly clever! They have superb hearing and can hear a mouse under 1 metre of snow. They adapt to any habitat.', habitat:'Worldwide',        diet:'Omnivore'},
+  {e:'🐊',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Nile_crocodile_head.jpg/400px-Nile_crocodile_head.jpg',name:'Crocodile',    fact:'Crocodiles have been on Earth for 200 million years! They are living dinosaurs. They can stay underwater for 2 hours.',       habitat:'Tropical rivers',  diet:'Carnivore'},
+  {e:'🐍',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Ball_python_lucy.jpg/400px-Ball_python_lucy.jpg',name:'Snake',        fact:'Snakes smell with their tongue! They sense heat through pits in their face. Some pythons can swallow an animal whole.',        habitat:'Worldwide',        diet:'Carnivore'},
+  {e:'🐆',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Leopard_in_the_Masai_Mara.jpg/400px-Leopard_in_the_Masai_Mara.jpg',name:'Leopard',      fact:'Leopards are incredibly strong. They carry prey heavier than themselves UP into trees to keep it safe from lions and hyenas!', habitat:'Africa & Asia',    diet:'Carnivore'},
+  {e:'🦝',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Raccoon_-_Stanley_Park.jpg/400px-Raccoon_-_Stanley_Park.jpg',name:'Raccoon',      fact:'Raccoons are super smart and have very dexterous hands. They can open locks, jars and pick up coins!',                        habitat:'North America',    diet:'Omnivore'},
+  {e:'🦌',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Roe_deer_%28Capreolus_capreolus%29_male_at_edge_of_woodland_-_geograph.org.uk_-_573600.jpg/400px-Roe_deer_%28Capreolus_capreolus%29_male_at_edge_of_woodland_-_geograph.org.uk_-_573600.jpg',name:'Deer',         fact:'Male deer grow and shed their antlers every year! Deer are very fast and can jump up to 3 metres high and 9 metres long.',     habitat:'Forests worldwide',diet:'Herbivore'},
+  {e:'🦬',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/American_bison_k5680-1.jpg/400px-American_bison_k5680-1.jpg',name:'Bison',        fact:'The heaviest land animal in North America at up to 900 kg! Millions once roamed the plains but were hunted nearly to extinction.', habitat:'North America', diet:'Herbivore'},
+  {e:'🐃',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/African_buffalo_%28Syncerus_caffer%29_Kruger.jpg/400px-African_buffalo_%28Syncerus_caffer%29_Kruger.jpg',name:'Buffalo',      fact:'African buffalo live in large herds for protection. They will work together to defend against lions and even fight back!',      habitat:'African Savanna',  diet:'Herbivore'},
+  {e:'🦡',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Honey_Badger_Kruger.jpg/400px-Honey_Badger_Kruger.jpg',name:'Honey Badger', fact:'The most fearless animal on Earth! Honey badgers take on lions, hyenas and cobras. Their skin is so tough it can resist machete cuts!', habitat:'Africa & Asia', diet:'Omnivore'},
+  {e:'🐋',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Anim1754_-_Flickr_-_NOAA_Photo_Library.jpg/400px-Anim1754_-_Flickr_-_NOAA_Photo_Library.jpg',name:'Blue Whale',   fact:'The largest animal ever to live on Earth — even bigger than dinosaurs! Their heart is the size of a small car.',             habitat:'All oceans',       diet:'Carnivore'},
+  {e:'🐅',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Snow_leopard_11.jpg/400px-Snow_leopard_11.jpg',name:'Snow Leopard', fact:'Perfectly adapted for cold mountains. Their huge paws act as snowshoes and their thick tails wrap around them like a blanket.', habitat:'Himalayas',       diet:'Carnivore'},
+  {e:'🐒',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Chimpanzee_seated_Gombe.jpg/400px-Chimpanzee_seated_Gombe.jpg',name:'Chimpanzee',   fact:'Our closest living relative — sharing 98.7% of our DNA! Chimps make and use tools, learn sign language and recognise themselves in mirrors.', habitat:'Central Africa', diet:'Omnivore'},
+  {e:'🦟',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Standing_jaguar.jpg/400px-Standing_jaguar.jpg',name:'Jaguar',       fact:'The only big cat in the Americas. Unlike other big cats, jaguars LOVE water and are expert swimmers. They hunt fish and turtles!', habitat:'Amazon rainforest', diet:'Carnivore'},
+  {e:'🐘',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Woolly_mammoth_-_Mauricio_Anton.jpg/400px-Woolly_mammoth_-_Mauricio_Anton.jpg',name:'Mammoth',      fact:'Ancient relative of elephants that lived during the Ice Age! They had very long curved tusks up to 5 metres long.',           habitat:'Ice Age grasslands',diet:'Herbivore'},
+  {e:'🦒',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Okapi2.jpg/400px-Okapi2.jpg',name:'Okapi',        fact:'Related to giraffes but looks like a zebra! Called the African unicorn because it was so mysterious and rarely seen by scientists.', habitat:'Congo rainforest', diet:'Herbivore'},
+  {e:'🐓',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Komodo_dragon%2C_Rinca_Island.jpg/400px-Komodo_dragon%2C_Rinca_Island.jpg',name:'Komodo Dragon',fact:'The largest living lizard at up to 3 metres long! Has a venomous bite and a forked tongue that detects prey from 10km away.',  habitat:'Indonesia',        diet:'Carnivore'},
+],
+domestic:[
+  {e:'🐕',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/YellowLabradorLooking_new.jpg/400px-YellowLabradorLooking_new.jpg',name:'Dog',          fact:'Man\'s best friend for over 15,000 years! Dogs can understand over 250 words and gestures. A dog\'s nose is 1,000 times more powerful than ours.', role:'Companion, guide, rescue'},
+  {e:'🐈',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/400px-Cat_November_2010-1a.jpg',name:'Cat',          fact:'Cats sleep 12–16 hours a day! Their purring vibrates at a frequency that actually helps heal bones and reduce stress in humans.',         role:'Companion, pest control'},
+  {e:'🐄',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Cow_female_black_white.jpg/400px-Cow_female_black_white.jpg',name:'Cow',          fact:'Cows produce about 200,000 glasses of milk in their lifetime! They have almost 360° vision and can recognise 50+ individuals.',            role:'Milk, meat, leather'},
+  {e:'🐎',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Nokota_Horses_cropped.jpg/400px-Nokota_Horses_cropped.jpg',name:'Horse',        fact:'Horses have been working with humans for 6,000 years. They sleep standing up! A horse can run at 88 km/h and jump 2.47 metres.',           role:'Transport, sport, farming'},
+  {e:'🐑',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Ovis_orientalis_aries_Svalbard_2004.jpg/400px-Ovis_orientalis_aries_Svalbard_2004.jpg',name:'Sheep',        fact:'Sheep have excellent memories and can remember 50 other sheep for years! Their wool grows continuously and is incredibly warm.',            role:'Wool, milk, meat'},
+  {e:'🐐',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Hausziege_04.jpg/400px-Hausziege_04.jpg',name:'Goat',         fact:'Goats were one of the first animals domesticated by humans 10,000 years ago. They are great climbers and can scale almost vertical cliffs!', role:'Milk, meat, fibre'},
+  {e:'🐷',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Duroc_sow.jpg/400px-Duroc_sow.jpg',name:'Pig',          fact:'Pigs are among the smartest animals — smarter than dogs! They are very clean animals and love wallowing in mud to cool down.',             role:'Meat, leather'},
+  {e:'🐔',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Gallus_gallus_domesticus.jpg/400px-Gallus_gallus_domesticus.jpg',name:'Chicken',      fact:'Chickens were first domesticated 8,000 years ago in Asia. There are more chickens on Earth than any other bird — over 30 billion!',       role:'Eggs, meat'},
+  {e:'🦆',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Mallard_-_natures_pics.jpg/400px-Mallard_-_natures_pics.jpg',name:'Duck',         fact:'Ducks are waterproof thanks to special oil from a gland near their tail. Their feet have no nerves or blood vessels so cold water doesn\'t bother them!', role:'Eggs, meat'},
+  {e:'🐰',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Oryctolagus_cuniculus_Rcdo.jpg/400px-Oryctolagus_cuniculus_Rcdo.jpg',name:'Rabbit',       fact:'Rabbits are very social animals and can die of loneliness! They purr like cats when happy and can be trained to use a litter box.',        role:'Companion, fur, meat'},
+  {e:'🐹',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Hamster_2702.jpg/400px-Hamster_2702.jpg',name:'Hamster',      fact:'Hamsters can run up to 8 miles every night on their wheels! Their cheek pouches can hold food equal to 20% of their body weight.',         role:'Companion pet'},
+  {e:'🫏',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Donkey_1_arp_750px.jpg/400px-Donkey_1_arp_750px.jpg',name:'Donkey',       fact:'Donkeys are actually smarter than horses and have excellent memories. They have been used as working animals for over 5,000 years!',       role:'Transport, farming'},
+  {e:'🦜',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/African_Grey_Parrot.jpg/400px-African_Grey_Parrot.jpg',name:'Parrot',       fact:'Some parrots can live 80+ years! They are highly intelligent, can mimic human speech and solve complex puzzles.',                          role:'Companion, communication'},
+  {e:'🐟',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Goldfish3.jpg/400px-Goldfish3.jpg',name:'Goldfish',     fact:'Goldfish have a memory span of at least 3 months — not 3 seconds as the myth says! They can be trained to push levers for food.',         role:'Companion, decoration'},
+  {e:'🐇',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Caviaatje.jpg/400px-Caviaatje.jpg',name:'Guinea Pig',   fact:'Guinea pigs are very social and communicate through sounds including purring, squeaking and a unique teeth-chattering sound.',              role:'Companion pet'},
+  {e:'🦙',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Llama_lying_down.jpg/400px-Llama_lying_down.jpg',name:'Llama',        fact:'Llamas spit when annoyed — but usually at each other, not people! They are used to protect sheep flocks from predators.',                  role:'Transport, fibre, guard'},
+  {e:'🐓',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Male_north_american_turkey_supersaturated.jpg/400px-Male_north_american_turkey_supersaturated.jpg',name:'Turkey',       fact:'Turkeys can run at 25 mph and fly at 55 mph! Benjamin Franklin wanted the turkey to be America\'s national bird instead of the eagle.',   role:'Meat, eggs'},
+  {e:'🐃',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Ox_pulling_plough.jpg/400px-Ox_pulling_plough.jpg',name:'Ox',           fact:'Oxen (trained bulls) have been farming animals for 10,000 years. They are stronger than horses for pulling heavy loads.',                  role:'Farming, transport'},
+  {e:'🐈‍⬛',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Angora_Rabbit.jpg/400px-Angora_Rabbit.jpg',name:'Rabbit (Angora)',fact:'Angora rabbits produce incredibly soft wool. They are brushed gently every few months to collect the silky fibre.',                  role:'Fibre, companion'},
+  {e:'🐝',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Apis_mellifera_flying_5.jpg/400px-Apis_mellifera_flying_5.jpg',name:'Honey Bee',    fact:'Bees are essential for pollinating our food. One hive produces about 27kg of honey per year. Without bees, we would lose 70% of our crops.', role:'Honey, pollination'},
+],
+sea:[
+  {e:'🐬',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Tursiops_truncatus_01.jpg/400px-Tursiops_truncatus_01.jpg',name:'Dolphin',      fact:'Dolphins are among the smartest animals on Earth. They have names for each other, solve complex problems and even show empathy!',          type:'Mammal',  habitat:'Oceans worldwide'},
+  {e:'🐋',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Anim1754_-_Flickr_-_NOAA_Photo_Library.jpg/400px-Anim1754_-_Flickr_-_NOAA_Photo_Library.jpg',name:'Blue Whale',   fact:'The LARGEST animal ever on Earth — up to 30 metres and 200 tonnes! Their heart alone weighs 180kg and beats just a few times per minute.', type:'Mammal',  habitat:'All oceans'},
+  {e:'🦈',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/White_shark.jpg/400px-White_shark.jpg',name:'Shark',        fact:'Sharks have been on Earth for 450 million years — older than trees! They never stop swimming and have multiple rows of teeth.',             type:'Fish',    habitat:'Oceans worldwide'},
+  {e:'🐙',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Octopus2_wikipedia_edit1.jpg/400px-Octopus2_wikipedia_edit1.jpg',name:'Octopus',      fact:'Octopuses have 3 hearts and blue blood! They are geniuses — they can open jars, solve mazes and change colour in milliseconds.',           type:'Mollusc', habitat:'Oceans worldwide'},
+  {e:'🦀',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Portunus_pelagicus.jpg/400px-Portunus_pelagicus.jpg',name:'Crab',         fact:'Crabs walk sideways! They have 10 legs and communicate by waving their claws. Some species live for 100 years.',                           type:'Crustacean',habitat:'Oceans & coasts'},
+  {e:'🦞',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Lobster_bg.jpg/400px-Lobster_bg.jpg',name:'Lobster',      fact:'Lobsters taste with their feet and hear with their legs! They can live over 100 years and technically don\'t age — they grow stronger!',   type:'Crustacean',habitat:'Ocean floor'},
+  {e:'⭐',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Sea_star_on_beach.jpg/400px-Sea_star_on_beach.jpg',name:'Starfish',      fact:'Starfish have no brain and no blood! They use seawater as blood. If they lose an arm, a whole new starfish can grow from it!',             type:'Echinoderm',habitat:'Ocean floor'},
+  {e:'🐢',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Green_Sea_Turtle_grazing_seagrass.jpg/400px-Green_Sea_Turtle_grazing_seagrass.jpg',name:'Sea Turtle',   fact:'Sea turtles have been swimming in our oceans for 110 million years. They can live 80+ years and migrate thousands of miles home to lay eggs.', type:'Reptile', habitat:'Tropical oceans'},
+  {e:'🪼',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Jellyfish_pacific_giant_1.jpg/400px-Jellyfish_pacific_giant_1.jpg',name:'Jellyfish',     fact:'Jellyfish have no brain, heart, bones or eyes yet they have survived 500 million years! One species is technically immortal.',              type:'Invertebrate',habitat:'All oceans'},
+  {e:'🐠',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Clown_fish_in_the_sea.jpg/400px-Clown_fish_in_the_sea.jpg',name:'Clownfish',    fact:'Famous from Finding Nemo! All clownfish are born male. The largest becomes female. They are immune to the stinging sea anemone.',           type:'Fish',    habitat:'Coral reefs'},
+  {e:'🐡',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Hippocampus_abdominalis_1_-_Aquarium_of_the_Pacific.jpg/400px-Hippocampus_abdominalis_1_-_Aquarium_of_the_Pacific.jpg',name:'Seahorse',     fact:'The ONLY animal where MALES get pregnant! Dad carries up to 2,000 babies. Seahorses hold their partner\'s tail — they mate for life.',     type:'Fish',    habitat:'Shallow seas'},
+  {e:'🦑',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Loligo_vulgaris.jpg/400px-Loligo_vulgaris.jpg',name:'Squid',        fact:'Giant squids have the largest eyes of any animal — 30cm across! They can change colour and shoot ink to confuse predators.',                type:'Mollusc', habitat:'Deep ocean'},
+  {e:'🦭',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Baby_seal.jpg/400px-Baby_seal.jpg',name:'Seal',         fact:'Seals can hold their breath for up to 2 hours! They sleep floating on the sea surface. Pups can swim from birth but learn on the beach.',  type:'Mammal',  habitat:'Cold oceans & coasts'},
+  {e:'🦦',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/Sea_otter_cropped.jpg/400px-Sea_otter_cropped.jpg',name:'Sea Otter',    fact:'Sea otters hold hands while sleeping so they don\'t drift apart! They use rocks as tools to crack open shellfish.',                         type:'Mammal',  habitat:'Pacific coasts'},
+  {e:'🐟',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Salmo_salar.jpg/400px-Salmo_salar.jpg',name:'Salmon',       fact:'Salmon are born in rivers, swim to the ocean, then find their way back to the EXACT river they were born in to lay their eggs. Amazing!',  type:'Fish',    habitat:'Rivers & oceans'},
+  {e:'🟠',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Clown_fish_in_the_sea.jpg/400px-Clown_fish_in_the_sea.jpg',name:'Clownfish (Sea Anemone)',fact:'Lives safely in the stinging tentacles of sea anemones. Protects the anemone from fish that would eat it — a perfect partnership!', type:'Fish', habitat:'Coral reefs'},
+  {e:'🌊',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Manta_alfredi_edited.jpg/400px-Manta_alfredi_edited.jpg',name:'Manta Ray',    fact:'The largest ray with a wingspan up to 7 metres! Despite their size, they only eat tiny plankton. They are very intelligent and curious.',   type:'Fish',    habitat:'Tropical oceans'},
+  {e:'🐋',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Killerwhales_jumping.jpg/400px-Killerwhales_jumping.jpg',name:'Orca/Killer Whale',fact:'Actually the largest member of the dolphin family! Orcas are the top predator of the sea — they even hunt great white sharks!',       type:'Mammal',  habitat:'All oceans'},
+  {e:'🟦',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Blue_ring_octopus.jpg/400px-Blue_ring_octopus.jpg',name:'Blue-ringed Octopus',fact:'One of the most venomous animals on Earth — small as a golf ball but can kill a human in minutes! Found in rock pools.',             type:'Mollusc', habitat:'Pacific & Indian Ocean'},
+  {e:'🐠',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Fugu_fish_02_Pengo.jpg/400px-Fugu_fish_02_Pengo.jpg',name:'Pufferfish',   fact:'Pufferfish inflate to 3x their size when scared! They contain enough poison to kill 30 adults. Yet people eat them as a dangerous delicacy.',type:'Fish',   habitat:'Tropical waters'},
+  {e:'⚪',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/GoldenSouthSeaPearl.jpg/400px-GoldenSouthSeaPearl.jpg',name:'Pearl Oyster',  fact:'Oysters create pearls by coating an irritant with layers of nacre. One pearl can take 2–7 years to form. Natural pearls are very rare!',   type:'Mollusc', habitat:'Tropical oceans'},
+  {e:'🟤',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Florida_manatee_with_calf.jpg/400px-Florida_manatee_with_calf.jpg',name:'Manatee',      fact:'Called sea cows, manatees are gentle giants related to elephants! They eat 9% of their body weight in seagrass daily.',                    type:'Mammal',  habitat:'Shallow tropical waters'},
+  {e:'🌊',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Narwhals.jpg/400px-Narwhals.jpg',name:'Narwhal',      fact:'The unicorn of the sea! Their spiral tusk is actually a tooth that can grow 3 metres long. It has millions of nerve endings to sense temperature.', type:'Mammal', habitat:'Arctic ocean'},
+  {e:'🟡',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Hippocampus_bargibanti1.jpg/400px-Hippocampus_bargibanti1.jpg',name:'Seahorse (Pygmy)',fact:'The smallest seahorse at just 1.5cm! So tiny and well camouflaged that scientists only discovered them recently.',                       type:'Fish',    habitat:'Coral reefs'},
+  {e:'🔵',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Portuguese_Man-O-War_%28Physalia_physalis%29.jpg/400px-Portuguese_Man-O-War_%28Physalia_physalis%29.jpg',name:'Portuguese Man O\'War',fact:'Not actually a jellyfish but a colony of organisms working together! Its tentacles can reach 50 metres and sting is extremely painful.', type:'Siphonophore',habitat:'Atlantic ocean'},
+  {e:'🐙',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Octopus_marginatus.jpg/400px-Octopus_marginatus.jpg',name:'Mimic Octopus', fact:'Can mimic 15+ different sea creatures including flatfish, lionfish and sea snakes to confuse predators! Discovered only in 1998.',        type:'Mollusc', habitat:'Indo-Pacific'},
+  {e:'🦐',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Mantis_shrimp_from_front.jpg/400px-Mantis_shrimp_from_front.jpg',name:'Shrimp',       fact:'Mantis shrimp can punch with the speed of a bullet! They have 16 types of colour receptors — humans only have 3. They see colours we can\'t imagine.', type:'Crustacean',habitat:'Shallow seas'},
+  {e:'🟦',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/FMIB_51927_Swordfish.jpeg/400px-FMIB_51927_Swordfish.jpeg',name:'Swordfish',    fact:'One of the fastest fish reaching 130 km/h! Their sword-like bill heats the brain and eyes to help them see in cold deep water.',            type:'Fish',    habitat:'Tropical oceans'},
+  {e:'🐟',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Exocoetidae.jpg/400px-Exocoetidae.jpg',name:'Flying Fish',  fact:'Can launch themselves out of water and glide up to 200 metres using their wing-like fins! They fly to escape predators.',                  type:'Fish',    habitat:'Tropical oceans'},
+  {e:'🌊',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Weedy_seadragon.jpg/400px-Weedy_seadragon.jpg',name:'Sea Dragon',   fact:'Relatives of seahorses, sea dragons are masters of camouflage. They look exactly like floating seaweed. Only found in Australian waters.', type:'Fish',    habitat:'Southern Australia'},
+],
+birds:[
+  {e:'🦅',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Bald_Eagle_-_USFWS.jpg/400px-Bald_Eagle_-_USFWS.jpg',name:'Eagle',        fact:'Eagles have eyesight 4–8 times stronger than humans — they can spot a rabbit from 3km away! They mate for life and use the same nest for decades.', type:'Bird of Prey', flies:'Yes'},
+  {e:'🦉',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Eurasian_Eagle_Owl.jpg/400px-Eurasian_Eagle_Owl.jpg',name:'Owl',          fact:'Owls can rotate their head 270°! They have special feathers that make them silent hunters. Their eyes are fixed in their skull — they must turn their whole head.', type:'Bird of Prey', flies:'Yes'},
+  {e:'🦜',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/African_Grey_Parrot.jpg/400px-African_Grey_Parrot.jpg',name:'Parrot',       fact:'African Grey parrots can learn 1,000 words and understand concepts! They can learn shapes, colours and numbers. Some live to 80+ years.',  type:'Tropical',    flies:'Yes'},
+  {e:'🐧',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Emperor_penguins.jpg/400px-Emperor_penguins.jpg',name:'Penguin',      fact:'Penguins are birds that can\'t fly but they are champion swimmers reaching 36 km/h underwater! They mate for life and both parents raise chicks.', type:'Flightless', flies:'No'},
+  {e:'🦩',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Phoenicopterus_ruber_in_S%C3%A3o_Paulo_Zoo.jpg/400px-Phoenicopterus_ruber_in_S%C3%A3o_Paulo_Zoo.jpg',name:'Flamingo',     fact:'Flamingos are pink because of the shrimp and algae they eat! They stand on one leg to conserve body heat. Chicks are born white.',         type:'Wading',      flies:'Yes'},
+  {e:'🦚',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Peacock_Plumage.jpg/400px-Peacock_Plumage.jpg',name:'Peacock',      fact:'Male peacocks have the most beautiful tail feathers in the world! They fan them out to attract females. A group of peacocks is called a muster.', type:'Game bird',  flies:'Short'},
+  {e:'🦢',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Mute_Swan_%28Cygnus_olor%29.jpg/400px-Mute_Swan_%28Cygnus_olor%29.jpg',name:'Swan',         fact:'Swans mate for life — if one dies, the other can die of heartbreak! A baby swan is called a cygnet. They are the heaviest flying birds.',  type:'Water bird',  flies:'Yes'},
+  {e:'🦆',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Mallard_-_natures_pics.jpg/400px-Mallard_-_natures_pics.jpg',name:'Mallard Duck', fact:'Male mallards have brilliant green heads! Ducks were one of the first birds domesticated by humans. They sleep with one eye open.',          type:'Water bird',  flies:'Yes'},
+  {e:'🐦',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Erithacus_rubecula_with_cocked_head.jpg/400px-Erithacus_rubecula_with_cocked_head.jpg',name:'Robin',        fact:'Robins are known as the gardener\'s friend — they follow gardeners to catch worms turned up by spades! Their song is one of the most beautiful.', type:'Songbird',  flies:'Yes'},
+  {e:'🦅',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Falco_peregrinus_-_01.jpg/400px-Falco_peregrinus_-_01.jpg',name:'Falcon',       fact:'The peregrine falcon is the FASTEST animal on Earth, diving at 389 km/h! Falcons were trained by kings for hunting — called falconry.',    type:'Bird of Prey', flies:'Yes'},
+  {e:'🦜',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Scarlet-Macaw.jpg/400px-Scarlet-Macaw.jpg',name:'Macaw',        fact:'The most colourful large parrot! Wild macaws eat clay to neutralise poisons in their food. They can crack open nuts that would need a hammer.', type:'Parrot',     flies:'Yes'},
+  {e:'🐦‍⬛',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Corvus-brachyrhynchos-001.jpg/400px-Corvus-brachyrhynchos-001.jpg',name:'Crow',       fact:'Crows are among the smartest animals on Earth. They use tools, recognise human faces and hold funerals for dead crows! They can mimic voices.', type:'Corvid',    flies:'Yes'},
+  {e:'🕊️',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Rock_Pigeon_Columba_livia.jpg/400px-Rock_Pigeon_Columba_livia.jpg',name:'Dove',        fact:'Doves are a universal symbol of peace. Homing pigeons can find their way home from 1,800km away using Earth\'s magnetic field as a compass.',  type:'Pigeon',     flies:'Yes'},
+  {e:'🦤',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Ostrich_-_melbourne_zoo.jpg/400px-Ostrich_-_melbourne_zoo.jpg',name:'Ostrich',      fact:'The largest bird on Earth at up to 2.7 metres — but it can\'t fly! It runs at 70km/h making it the fastest two-legged animal. Lays the largest eggs.', type:'Flightless', flies:'No'},
+  {e:'🦜',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Keel-billed-Toucan.jpg/400px-Keel-billed-Toucan.jpg',name:'Toucan',       fact:'Toucans have the largest beak relative to body size of any bird! They use it to reach fruit on branches too thin to stand on.',             type:'Tropical',    flies:'Yes'},
+  {e:'🐦',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Trochilidae_-_Archilochus_colubris_%28male%29.jpg/400px-Trochilidae_-_Archilochus_colubris_%28male%29.jpg',name:'Hummingbird',  fact:'The only bird that can fly backwards! Their wings beat 80 times per second. Their heart beats 1,260 times per minute — the fastest of any bird.', type:'Nectar bird', flies:'Yes'},
+  {e:'🦆',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Atlantic_puffin_%28Fratercula_arctica%29.jpg/400px-Atlantic_puffin_%28Fratercula_arctica%29.jpg',name:'Puffin',       fact:'Puffins carry multiple fish in their beak at once — up to 60 fish! They are excellent swimmers that use their wings to swim underwater.',   type:'Seabird',     flies:'Yes'},
+  {e:'🦅',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Red-tailed_Hawk.jpg/400px-Red-tailed_Hawk.jpg',name:'Hawk',         fact:'Hawks have incredible eyesight — seeing 8x more detail than humans! They can spot a mouse from 100m away while flying at high speed.',      type:'Bird of Prey', flies:'Yes'},
+  {e:'🦢',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Grus_japonensis_at_Kushiro.jpg/400px-Grus_japonensis_at_Kushiro.jpg',name:'Crane',        fact:'Cranes perform beautiful dancing displays to attract mates! Some species migrate 20,000km twice a year. They feature in many Asian legends.', type:'Wading',     flies:'Yes'},
+  {e:'🐦',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Common_kingfisher_alcedo_atthis.jpg/400px-Common_kingfisher_alcedo_atthis.jpg',name:'Kingfisher',   fact:'Dives into water at 40km/h with perfect aim to catch fish! Their beak inspired the design of the Japanese bullet train to reduce noise.',   type:'Fishing bird', flies:'Yes'},
+  {e:'🦜',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Cacatua_galerita_-Busch_Gardens_-Florida-8a.jpg/400px-Cacatua_galerita_-Busch_Gardens_-Florida-8a.jpg',name:'Cockatoo',     fact:'Cockatoos can live 60–80 years. They are incredibly affectionate and bond deeply with their owners. Some can learn to dance to music!',     type:'Parrot',      flies:'Yes'},
+  {e:'🐦',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Great_Spotted_Woodpecker.jpg/400px-Great_Spotted_Woodpecker.jpg',name:'Woodpecker',   fact:'Pecks wood up to 20 times per second to find insects! A special thick skull prevents brain damage. They store thousands of acorns for winter.', type:'Forest bird', flies:'Yes'},
+  {e:'🦅',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Andean_condor_%28Vultur_gryphus%29.jpg/400px-Andean_condor_%28Vultur_gryphus%29.jpg',name:'Condor',       fact:'The largest flying bird in North America with a wingspan up to 3.2 metres! Condors can glide for hours without flapping their wings.',      type:'Bird of Prey', flies:'Yes'},
+  {e:'🦜',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/YellowCanary.jpg/400px-YellowCanary.jpg',name:'Canary',       fact:'Canaries were taken into coal mines to warn of dangerous gases — if the canary fell ill, miners knew to evacuate! They are brilliant singers.', type:'Songbird',  flies:'Yes'},
+  {e:'🐦',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Apus_apus_flock_edit.jpg/400px-Apus_apus_flock_edit.jpg',name:'Swift',        fact:'The common swift spends almost its ENTIRE life airborne — eating, sleeping and mating in flight! They only land to nest and lay eggs.',      type:'Aerial bird', flies:'Yes'},
+  {e:'🦆',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Pelecanus_conspicillatus_-_Syracuse.jpg/400px-Pelecanus_conspicillatus_-_Syracuse.jpg',name:'Pelican',      fact:'Pelicans have a huge throat pouch that holds 3x more than their stomach! They work as a team to herd fish before scooping them up.',        type:'Water bird',  flies:'Yes'},
+  {e:'🦜',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Agapornis_roseicollis_-Artis_Zoo%2C_Amsterdam%2C_Netherlands-8a.jpg/400px-Agapornis_roseicollis_-Artis_Zoo%2C_Amsterdam%2C_Netherlands-8a.jpg',name:'Lovebird',     fact:'Lovebirds truly mate for life! A separated lovebird becomes depressed. They are small parrots that spend hours preening each other.',        type:'Parrot',      flies:'Yes'},
+  {e:'🦢',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/White_stork_Ranthambhore.jpg/400px-White_stork_Ranthambhore.jpg',name:'Stork',        fact:'Storks have no voice box — they clatter their beaks to communicate! They return to the same nest every year and have been used in birth legends for centuries.', type:'Wading', flies:'Yes'},
+  {e:'🐦',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Blue_jay_in_PP_%285219%29.jpg/400px-Blue_jay_in_PP_%285219%29.jpg',name:'Blue Jay',     fact:'Blue Jays are incredibly smart. They mimic hawk calls to scare other birds away from food! They can hold 5 acorns in their throat at once.', type:'Songbird',  flies:'Yes'},
+  {e:'🦅',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Secretary_bird_%28Sagittarius_serpentarius%29.jpg/400px-Secretary_bird_%28Sagittarius_serpentarius%29.jpg',name:'Secretary Bird',fact:'Unusual bird of prey that hunts on foot! It stamps snakes to death with powerful kicks. Has a crest of feathers that looks like quill pens.', type:'Ground bird', flies:'Yes'},
+],
+};
+
+var encState={cat:'fruits', search:''};
+
+
+// ── Emoji → reliable CDN image ──────────────────────
+function emojiToImgUrl(emoji){
+  try{
+    var pts=[];
+    for(var i=0;i<emoji.length;){
+      var cp=emoji.codePointAt(i);
+      if(cp!==0xFE0F && cp!==0x200D){pts.push(cp.toString(16));}
+      i+=cp>0xFFFF?2:1;
+    }
+    // remove trailing fe0f
+    while(pts.length&&pts[pts.length-1]==='fe0f')pts.pop();
+    var code=pts.join('-');
+    return 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/'+code+'.svg';
+  }catch(e){return '';}
+}
+
+function makeEmojiImg(emoji, size, fallbackFontSize){
+  var url=emojiToImgUrl(emoji);
+  var img=document.createElement('img');
+  img.src=url;
+  img.width=size; img.height=size;
+  img.style.cssText='width:'+size+'px;height:'+size+'px;object-fit:contain;display:block;';
+  img.onerror=function(){
+    // fallback: replace with text span
+    var sp=document.createElement('span');
+    sp.textContent=emoji;
+    sp.style.fontSize=(fallbackFontSize||'3.5rem');
+    sp.style.lineHeight='1';
+    if(this.parentNode){this.parentNode.replaceChild(sp,this);}
+  };
+  return img;
+}
+
+function initEncyc(cat){
+  (function injectEncycCSS_guard(){if(!document.getElementById('encycCSS')){var s=document.createElement('style');s.id='encycCSS';document.head.appendChild(s);}})();
+  clearModes();
+  encState.cat=cat||'fruits';
+  encState.search='';
+  var el=document.getElementById('mode-encyc');
+  if(!el)return;
+  el.style.display='block';
+  renderEncycHome(el);
+}
+
+function renderEncycHome(el){
+  el.innerHTML='';
+  var wrap=document.createElement('div');wrap.className='enc-wrap';
+
+  // Header
+  var hdr=document.createElement('div');hdr.className='enc-header';
+  hdr.innerHTML='<div class="enc-title">🌍 Nature Encyclopedia</div>'+
+    '<div class="enc-subtitle">Tap any card to learn more · '+
+    Object.values(ENCYC_DATA).reduce(function(n,a){return n+a.length;},0)+' entries across 6 categories</div>';
+  wrap.appendChild(hdr);
+
+  // Category tabs
+  var catRow=document.createElement('div');catRow.className='enc-cat-row';
+  ENCYC_CATS.forEach(function(cat){
+    var b=document.createElement('button');
+    b.className='enc-cat-btn'+(cat.id===encState.cat?' active':'');
+    b.style.background=cat.grd;
+    b.style.color='rgba(0,0,0,0.85)';
+    b.textContent=cat.label;
+    b.onclick=(function(id){return function(){encState.cat=id;encState.search='';renderEncycHome(el);};})(cat.id);
+    catRow.appendChild(b);
+  });
+  wrap.appendChild(catRow);
+
+  // Search
+  var searchBox=document.createElement('input');
+  searchBox.className='enc-search';
+  searchBox.placeholder='🔍 Search '+encState.cat+'...';
+  searchBox.value=encState.search;
+  searchBox.oninput=function(){encState.search=this.value;renderEncycGrid(gridEl,activeCat);};
+  wrap.appendChild(searchBox);
+
+  var activeCat=ENCYC_CATS.find(function(c){return c.id===encState.cat;})||ENCYC_CATS[0];
+
+  // Count
+  var countEl=document.createElement('div');countEl.className='enc-count';
+  wrap.appendChild(countEl);
+
+  // Grid
+  var gridEl=document.createElement('div');gridEl.className='enc-grid';
+  wrap.appendChild(gridEl);
+
+  el.appendChild(wrap);
+
+  renderEncycGrid(gridEl, activeCat);
+  countEl.textContent=(ENCYC_DATA[activeCat.id]||[]).length+' entries in '+activeCat.label;
+}
+
+function makeCardImg(item, size, radius){
+  var el;
+  if(item.img){
+    el=document.createElement('img');
+    el.src=item.img;
+    el.className='enc-f-img';
+    el.style.borderRadius=radius||'18px';
+    el.onerror=function(){
+      var sp=document.createElement('div');
+      sp.className='enc-f-img-emoji';
+      sp.textContent=item.e;
+      if(this.parentNode)this.parentNode.replaceChild(sp,this);
+    };
+  } else {
+    el=document.createElement('div');
+    el.className='enc-f-img-emoji';
+    el.appendChild(makeEmojiImg(item.e,size||72,'4rem'));
+  }
+  return el;
+}
+
+function renderEncycGrid(gridEl, activeCat){
+  gridEl.innerHTML='';
+  var items=(ENCYC_DATA[activeCat.id]||[]);
+  var query=encState.search.toLowerCase().trim();
+  if(query) items=items.filter(function(it){return it.name.toLowerCase().includes(query)||(it.benefit||it.fact||'').toLowerCase().includes(query);});
+
+  if(items.length===0){
+    gridEl.innerHTML='<div class="enc-no-results">😔 No results for "'+encState.search+'"</div>';
+    return;
+  }
+
+  items.forEach(function(item){
+    // ── wrapper keeps perspective ──
+    var wrap=document.createElement('div');
+    wrap.className='enc-card-wrap';
+
+    // 360 badge
+    var badge=document.createElement('div');
+    badge.className='enc-spin-badge';
+    badge.textContent='↻ 360°';
+    wrap.appendChild(badge);
+
+    // inner (rotates)
+    var inner=document.createElement('div');
+    inner.className='enc-card-inner';
+
+    // ── FRONT FACE ──
+    var front=document.createElement('div');
+    front.className='enc-face enc-face-front';
+    front.style.background=activeCat.bg;
+
+    var fImg=makeCardImg(item);
+    front.appendChild(fImg);
+
+    var fOverlay=document.createElement('div');
+    fOverlay.className='enc-f-overlay';
+    fOverlay.innerHTML='<div class="enc-f-name">'+item.name+'</div>'+
+      '<div class="enc-f-tap">Tap to flip ↻</div>';
+    front.appendChild(fOverlay);
+    inner.appendChild(front);
+
+    // ── BACK FACE ──
+    var back=document.createElement('div');
+    back.className='enc-face enc-face-back';
+    back.style.background='linear-gradient(145deg,'+activeCat.color+'22,'+activeCat.color+'08)';
+    back.style.borderColor=activeCat.color+'44';
+    back.style.border='2px solid '+activeCat.color+'44';
+
+    var bEmoji=document.createElement('div');bEmoji.className='enc-b-emoji';bEmoji.textContent=item.e;
+    var bName=document.createElement('div');bName.className='enc-b-name';bName.textContent=item.name;
+    var bBenefit=document.createElement('div');bBenefit.className='enc-b-benefit';
+    bBenefit.style.color=activeCat.color;
+    bBenefit.textContent=item.benefit||item.type||item.role||'';
+    var bFact=document.createElement('div');bFact.className='enc-b-fact';
+    // truncate fact to ~80 chars for card back
+    var factShort=(item.fact||'');
+    if(factShort.length>90)factShort=factShort.substring(0,87)+'...';
+    bFact.textContent=factShort;
+    var bMore=document.createElement('button');bMore.className='enc-b-more';
+    bMore.style.background=activeCat.grd;
+    bMore.textContent='Learn More →';
+
+    back.appendChild(bEmoji);back.appendChild(bName);
+    if(bBenefit.textContent)back.appendChild(bBenefit);
+    back.appendChild(bFact);back.appendChild(bMore);
+    inner.appendChild(back);
+    wrap.appendChild(inner);
+
+    // ── click: flip card ──
+    wrap.onclick=function(e){
+      e.stopPropagation();
+      wrap.classList.toggle('flipped');
+    };
+    // ── Learn More: open detail modal ──
+    bMore.onclick=(function(it,cat){
+      return function(e){e.stopPropagation();openEncycModal(it,cat);};
+    })(item,activeCat);
+
+    gridEl.appendChild(wrap);
+  });
+}
+
+
+function openEncycModal(item, cat){
+  var existing=document.getElementById('enc-modal-overlay');
+  if(existing)existing.remove();
+
+  var overlay=document.createElement('div');
+  overlay.id='enc-modal-overlay';
+  overlay.className='enc-modal';
+  overlay.onclick=function(e){if(e.target===overlay){overlay.remove();speechSynthesis&&speechSynthesis.cancel();}};
+
+  var box=document.createElement('div');box.className='enc-modal-box';
+  box.style.borderTop='3px solid '+cat.color;
+
+  // Close btn
+  var closeBtn=document.createElement('button');closeBtn.className='enc-modal-close';
+  closeBtn.textContent='✕';closeBtn.onclick=function(){overlay.remove();speechSynthesis&&speechSynthesis.cancel();};
+  box.appendChild(closeBtn);
+
+  // ── 3D SPINNER ─────────────────────────────
+  var spinner3d=document.createElement('div');spinner3d.className='enc-modal-3d';
+  var spinInner=document.createElement('div');spinInner.className='enc-modal-3d-inner';
+
+  if(item.img){
+    var sImg=document.createElement('img');
+    sImg.src=item.img;
+    sImg.style.cssText='width:160px;height:160px;object-fit:cover;border-radius:24px;display:block;';
+    sImg.onerror=function(){
+      var sp=document.createElement('div');sp.className='enc-modal-3d-emoji';sp.textContent=item.e;
+      spinInner.replaceChild(sp,sImg);
+    };
+    spinInner.appendChild(sImg);
+  } else {
+    var spEmoji=document.createElement('div');spEmoji.className='enc-modal-3d-emoji';
+    spEmoji.appendChild(makeEmojiImg(item.e,120,'5.5rem'));
+    spinInner.appendChild(spEmoji);
+  }
+  spinner3d.appendChild(spinInner);
+  box.appendChild(spinner3d);
+
+  // Tap to pause spin hint
+  var spinHint=document.createElement('div');spinHint.className='enc-modal-spin-hint';
+  spinHint.textContent='↻ 360° view — tap to pause / resume';
+  spinner3d.onclick=function(){spinInner.classList.toggle('paused');};
+  box.appendChild(spinHint);
+
+  // Name
+  var name=document.createElement('div');name.className='enc-modal-name';name.textContent=item.name;
+  box.appendChild(name);
+
+  // Category tag
+  var tagRow=document.createElement('div');tagRow.className='enc-modal-tag';
+  var tag=document.createElement('span');tag.style.background=cat.grd;tag.style.color='rgba(0,0,0,0.85)';
+  tag.textContent=cat.label;tagRow.appendChild(tag);box.appendChild(tagRow);
+
+  // Extra badges
+  var bParts=[];
+  if(item.habitat)bParts.push('📍 '+item.habitat);
+  if(item.diet)   bParts.push('🍽️ '+item.diet);
+  if(item.type)   bParts.push('🏷️ '+item.type);
+  if(item.role)   bParts.push('⭐ '+item.role);
+  if(item.flies)  bParts.push(item.flies==='Yes'?'🛫 Can Fly':'🚫 Cannot Fly');
+  if(bParts.length){
+    var bRow=document.createElement('div');bRow.style.cssText='text-align:center;margin-bottom:12px;flex-wrap:wrap;display:flex;justify-content:center;gap:6px;';
+    bParts.forEach(function(txt){
+      var b=document.createElement('span');
+      b.style.cssText='display:inline-block;padding:4px 12px;border-radius:50px;background:rgba(255,255,255,0.08);font-size:0.72rem;font-weight:700;border:1px solid rgba(255,255,255,0.1);';
+      b.textContent=txt;bRow.appendChild(b);
+    });
+    box.appendChild(bRow);
+  }
+
+  // Benefit section
+  if(item.benefit){
+    var benSec=document.createElement('div');benSec.className='enc-modal-section';
+    benSec.innerHTML='<div class="enc-modal-section-title">✨ Health Benefit</div>'+
+      '<div class="enc-modal-section-text" style="color:'+cat.color+';font-weight:800;font-size:0.95rem;">'+item.benefit+'</div>';
+    box.appendChild(benSec);
+  }
+
+  // Fun fact
+  var factSec=document.createElement('div');factSec.className='enc-modal-section';
+  factSec.innerHTML='<div class="enc-modal-section-title">🌟 Amazing Fact</div>'+
+    '<div class="enc-modal-section-text">'+item.fact+'</div>';
+  box.appendChild(factSec);
+
+  // Read aloud btn
+  var listenBtn=document.createElement('button');listenBtn.className='enc-modal-btn';
+  listenBtn.style.background=cat.grd;listenBtn.style.color='rgba(0,0,0,0.85)';
+  listenBtn.innerHTML='🔊 Read Aloud';
+  var spkText=item.name+'. '+(item.benefit?item.benefit+'. ':'')+item.fact;
+  var speaking=false;
+  listenBtn.onclick=function(){
+    if(!window.speechSynthesis)return;
+    if(speaking){speechSynthesis.cancel();speaking=false;listenBtn.innerHTML='🔊 Read Aloud';return;}
+    speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(spkText);
+    u.rate=0.88;u.pitch=1.1;u.volume=1;
+    u.onend=function(){speaking=false;listenBtn.innerHTML='🔊 Read Aloud';};
+    speechSynthesis.speak(u);
+    speaking=true;listenBtn.innerHTML='⏹ Stop';
+  };
+  box.appendChild(listenBtn);
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  addXP(2);
 }
 
 </script>
